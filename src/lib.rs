@@ -1,7 +1,10 @@
 use sha3::{Digest, Keccak256};
+use std::fs::File;
+use std::io::{self, BufRead};
+use std::path::Path;
 use std::str;
 
-fn display_vec(vec: Vec<u8>) -> String {
+fn vec_to_hex(vec: Vec<u8>) -> String {
     let result: String = vec
         .iter()
         .map(|x| format!("{:02x?}", x))
@@ -17,6 +20,10 @@ fn sha3(name: &[u8]) -> Vec<u8> {
     let hasher_fin = hasher.finalize();
     let result: &[u8] = hasher_fin.as_slice();
     result.to_vec()
+}
+
+pub fn sha3_hex(name: String) -> String {
+    format!("{}", vec_to_hex(sha3(name.as_bytes())))
 }
 
 fn namehash(name: String) -> Vec<u8> {
@@ -35,6 +42,14 @@ fn namehash(name: String) -> Vec<u8> {
     }
 }
 
-pub fn domain_to_hash(name: String) -> String {
-    format!("{}", display_vec(namehash(name)))
+pub fn namehash_hex(name: String) -> String {
+    format!("{}", vec_to_hex(namehash(name)))
+}
+
+pub fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
+where
+    P: AsRef<Path>,
+{
+    let file = File::open(filename)?;
+    Ok(io::BufReader::new(file).lines())
 }
