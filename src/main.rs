@@ -18,6 +18,7 @@ fn display_vec(vec: Vec<u8>) -> String {
         .map(|x| format!("{:02x?}", x))
         .collect::<Vec<String>>()
         .join("");
+
     ["0x".into(), result].concat()
 }
 
@@ -35,16 +36,13 @@ fn namehash(name: String) -> Vec<u8> {
     } else {
         let split_vec: Vec<&str> = name.split(".").collect();
         let label = split_vec.get(0).unwrap().to_string();
-        let remainder: String;
-        if split_vec.len() > 1 {
-            remainder = split_vec.get(1).unwrap().to_string();
-        } else {
-            remainder = "".into();
-        }
+        let remainder: String = split_vec.get(1).or(Some(&"")).unwrap().to_string();
 
-        let a = namehash(remainder);
-        let b = sha3(label.as_bytes());
-        sha3([a, b].concat().as_slice())
+        sha3(
+            [namehash(remainder), sha3(label.as_bytes())]
+                .concat()
+                .as_slice(),
+        )
     }
 }
 
