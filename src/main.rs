@@ -24,7 +24,7 @@ fn display_vec(vec: Vec<u8>) -> String {
 
 fn sha3(name: &[u8]) -> Vec<u8> {
     let mut hasher = Keccak256::new();
-    hasher.update(name.clone());
+    hasher.update(name);
     let hasher_fin = hasher.finalize();
     let result: &[u8] = hasher_fin.as_slice();
     result.to_vec()
@@ -34,7 +34,7 @@ fn namehash(name: String) -> Vec<u8> {
     if name.is_empty() {
         ZERO.to_vec()
     } else {
-        let split_vec: Vec<&str> = name.split(".").collect();
+        let split_vec: Vec<&str> = name.split('.').collect();
         let label = split_vec.get(0).unwrap().to_string();
         let remainder: String = split_vec.get(1).or(Some(&"")).unwrap().to_string();
 
