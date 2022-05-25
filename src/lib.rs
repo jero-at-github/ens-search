@@ -1,7 +1,7 @@
 use sha3::{Digest, Keccak256};
 use std::str;
 
-pub fn display_vec(vec: Vec<u8>) -> String {
+fn display_vec(vec: Vec<u8>) -> String {
     let result: String = vec
         .iter()
         .map(|x| format!("{:02x?}", x))
@@ -19,7 +19,7 @@ fn sha3(name: &[u8]) -> Vec<u8> {
     result.to_vec()
 }
 
-pub fn namehash(name: String) -> Vec<u8> {
+fn namehash(name: String) -> Vec<u8> {
     if name.is_empty() {
         [0; 32].to_vec()
     } else {
@@ -33,4 +33,8 @@ pub fn namehash(name: String) -> Vec<u8> {
                 .as_slice(),
         )
     }
+}
+
+pub fn domain_to_hash(name: String) -> String {
+    format!("{}", display_vec(namehash(name)))
 }
