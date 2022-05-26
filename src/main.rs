@@ -50,9 +50,14 @@ async fn request_data(ht: HashMap<String, String>) -> Result<Response, Box<dyn E
         .header("content-type", "application/json")
         .send()
         .await?;
-    let response = res.json::<Response>().await?;
-
-    Ok(response)
+    let response = res.json::<Response>().await;
+    match response {
+        Ok(r) => return Ok(r),
+        Err(e) => {
+            println!("Http Body: {:#?}", q);
+            panic!("Problem calling API: {:?}", e);
+        }
+    };
 }
 
 fn process_data(
@@ -80,7 +85,7 @@ fn process_data(
     let mut ht_iter = ht.iter();
     let mut ht_value = ht_iter.next();
 
-    // Loop through requested domains hashmap
+    // Check unregistered domains
     while ht_value.is_some() {
         let hash = ht_value.unwrap().0;
         let domain_name = ht_value.unwrap().1;
@@ -93,6 +98,7 @@ fn process_data(
         ht_value = ht_iter.next();
     }
 
+    // Check expired domains
     let mut exp_dates_iter = response_exp_dates.iter();
     let mut exp_dates_value = exp_dates_iter.next();
     while exp_dates_value.is_some() {
@@ -100,7 +106,6 @@ fn process_data(
         let timestamp = &exp_dates_value.unwrap().1;
         let dt = Utc.timestamp(timestamp.parse::<i64>().unwrap(), 0);
 
-        println!("{:#?}", dt);
         if dt.lt(&Utc::now()) {
             let domain_name = ht.get(hash).unwrap();
             expired_domains.push(domain_name.clone());
@@ -112,7 +117,7 @@ fn process_data(
 }
 
 async fn process_file() {
-    if let Ok(lines) = read_lines("./sample/test.txt") {
+    if let Ok(lines) = read_lines("./sample/3letters.txt") {
         let mut ht: HashMap<String, String> = HashMap::new();
         let mut unregistered_domains: Vec<String> = vec![];
         let mut expired_domains: Vec<String> = vec![];
@@ -127,14 +132,18 @@ async fn process_file() {
 
                 if idx != 0 && (idx + 1) % 100 == 0 {
                     // request ENS API
-                    let r = request_data(ht.clone()).await.unwrap();
+                    let r = request_data(ht.clone())
+                        .await
+                        .expect("Error requesting API");
+
                     let p = process_data(r, ht.clone());
                     let p_data = p.unwrap();
                     unregistered_domains.append(&mut p_data.clone().0);
                     expired_domains.append(&mut p_data.clone().1);
 
+                    ht.clear();
                     thread::sleep(time::Duration::from_secs(1));
-                    total_processed += 1;
+                    total_processed += 100;
                     println!("Processed {} domains", total_processed);
                 }
             }
@@ -152,6 +161,7 @@ async fn process_file() {
         }
 
         ht.clear();
+
         println!("Not registered domains: {:#?}", unregistered_domains);
         println!("Expired domains: {:#?}", expired_domains);
     }
