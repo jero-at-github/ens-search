@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use ens_domains::{namehash_hex, sha3_hex};
+    use crate::utils::{namehash_hex, sha3_hex};
 
     #[test]
     fn zero() {

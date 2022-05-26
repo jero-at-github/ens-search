@@ -3,65 +3,13 @@
 // https://eips.ethereum.org/EIPS/eip-137
 
 use chrono::{TimeZone, Utc};
-use ens_domains::{read_lines, sha3_hex};
+use ens_domains::{read_lines, request_ens_data, sha3_hex, EnsResponse};
 use std::collections::HashMap;
 use std::error::Error;
 use std::{thread, time};
 
-use crate::structs::{Query, QueryVariables, Response};
-
-mod structs;
-mod tests;
-
-async fn request_data(ht: HashMap<String, String>) -> Result<Response, Box<dyn Error>> {
-    // Extract ids from hashmap
-    let ht_ids = ht
-        .iter()
-        .map(|ht| String::from(ht.0))
-        .collect::<Vec<String>>();
-
-    // Build GraphQL query
-    let q = r#"
-    query getName($ids: [ID!]) {
-        registrations(where: { id_in: $ids }) {
-            id
-            labelName
-            expiryDate
-            registrationDate
-            domain {
-                name
-            }
-        }
-    }"#
-    .into();
-
-    let q = Query {
-        query: q,
-        variables: QueryVariables {
-            ids: ht_ids.clone(),
-        },
-    };
-
-    // HTTP request
-    let client = reqwest::Client::new();
-    let res = client
-        .post("https://api.thegraph.com/subgraphs/name/ensdomains/ens")
-        .json(&q)
-        .header("content-type", "application/json")
-        .send()
-        .await?;
-    let response = res.json::<Response>().await;
-    match response {
-        Ok(r) => return Ok(r),
-        Err(e) => {
-            println!("Http Body: {:#?}", q);
-            panic!("Problem calling API: {:?}", e);
-        }
-    };
-}
-
 fn process_data(
-    response: Response,
+    response: EnsResponse,
     ht: HashMap<String, String>,
 ) -> Result<(Vec<String>, Vec<String>), Box<dyn Error>> {
     // Collect response domain ids and expiration dates
@@ -132,14 +80,14 @@ async fn process_file() {
 
                 if idx != 0 && (idx + 1) % 100 == 0 {
                     // request ENS API
-                    let r = request_data(ht.clone())
+                    let r = request_ens_data(ht.clone())
                         .await
                         .expect("Error requesting API");
 
                     let p = process_data(r, ht.clone());
-                    let p_data = p.unwrap();
-                    unregistered_domains.append(&mut p_data.clone().0);
-                    expired_domains.append(&mut p_data.clone().1);
+                    let mut p_data = p.unwrap();
+                    unregistered_domains.append(&mut p_data.0);
+                    expired_domains.append(&mut p_data.1);
 
                     ht.clear();
                     thread::sleep(time::Duration::from_secs(1));
@@ -151,11 +99,11 @@ async fn process_file() {
 
         if !ht.is_empty() {
             // request ENS API
-            let r = request_data(ht.clone()).await.unwrap();
+            let r = request_ens_data(ht.clone()).await.unwrap();
             let p = process_data(r, ht.clone());
-            let p_data = p.unwrap();
-            unregistered_domains.append(&mut p_data.clone().0);
-            expired_domains.append(&mut p_data.clone().1);
+            let mut p_data = p.unwrap();
+            unregistered_domains.append(&mut p_data.0);
+            expired_domains.append(&mut p_data.1);
 
             println!("Processed {} domains", total_processed + ht.clone().len());
         }
