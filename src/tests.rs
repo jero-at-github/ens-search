@@ -25,4 +25,10 @@ mod tests {
             "0x41b1a0649752af1b28b3dc29a1556eee781e4a4c3a1f7f53f90fa834de098c4d"
         );
     }
+
+    // TODO:
+    // async fn process_file() {
+    //     process_file("./sample/3letters.txt".into()).await;
+    //     assert_eq!(a, b);
+    // }
 }

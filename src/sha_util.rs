@@ -22,6 +22,7 @@ pub fn sha3_hex(name: String) -> String {
     sha_vec_to_hex(sha3(name.as_bytes()))
 }
 
+#[allow(dead_code)]
 fn namehash(name: String) -> Vec<u8> {
     if name.is_empty() {
         [0; 32].to_vec()
@@ -38,6 +39,7 @@ fn namehash(name: String) -> Vec<u8> {
     }
 }
 
+#[allow(dead_code)]
 pub fn namehash_hex(name: String) -> String {
     sha_vec_to_hex(namehash(name))
 }
