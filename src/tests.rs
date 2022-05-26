@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::utils::{namehash_hex, sha3_hex};
+    use crate::sha_util::{namehash_hex, sha3_hex};
 
     #[test]
     fn zero() {
