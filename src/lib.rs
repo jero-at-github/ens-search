@@ -7,7 +7,10 @@ use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 use std::str;
+use std::{thread, time};
 
+const REQUEST_DELAY: u64 = 1000;
+const MAX_ENS_QUERY: usize = 100;
 const ENS_URL: &str = "https://api.thegraph.com/subgraphs/name/ensdomains/ens";
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -144,7 +147,7 @@ pub async fn request_ens_data(ht: HashMap<String, String>) -> Result<EnsResponse
     };
 }
 
-pub fn process_ens_data(
+fn process_ens_data(
     response: EnsResponse,
     ht: HashMap<String, String>,
 ) -> Result<(Vec<String>, Vec<String>), Box<dyn Error>> {
@@ -198,4 +201,66 @@ pub fn process_ens_data(
     }
 
     Ok((not_registered_domains, expired_domains))
+}
+
+async fn request_ens_batch(
+    ht: &mut HashMap<String, String>,
+    total_processed: &mut usize,
+    unregistered_domains: &mut Vec<String>,
+    expired_domains: &mut Vec<String>,
+) {
+    let r = request_ens_data(ht.clone()).await;
+    if let Ok(response_data) = r {
+        let p = process_ens_data(response_data, ht.clone());
+        let mut p_data = p.unwrap();
+        unregistered_domains.append(&mut p_data.0);
+        expired_domains.append(&mut p_data.1);
+
+        thread::sleep(time::Duration::from_millis(REQUEST_DELAY));
+        *total_processed += ht.clone().len();
+        println!("Processed {} domains", total_processed);
+        ht.clear();
+    }
+}
+
+pub async fn process_file(file_name: String) {
+    if let Ok(lines) = read_lines(file_name) {
+        let mut ht: HashMap<String, String> = HashMap::new();
+        let mut unregistered_domains: Vec<String> = vec![];
+        let mut expired_domains: Vec<String> = vec![];
+        let mut total_processed = 0;
+
+        // let progress_ptg = lines.size_hint().1.unwrap() / 10;
+
+        for (idx, line) in lines.enumerate() {
+            if let Ok(domain_name) = line {
+                let domain_name_norm = domain_name.to_lowercase();
+                let domain_hash = sha3_hex(domain_name_norm.clone());
+                ht.insert(domain_hash, domain_name_norm.clone());
+
+                if idx != 0 && (idx + 1) % MAX_ENS_QUERY == 0 {
+                    request_ens_batch(
+                        &mut ht,
+                        &mut total_processed,
+                        &mut unregistered_domains,
+                        &mut expired_domains,
+                    )
+                    .await;
+                }
+            }
+        }
+
+        if !ht.is_empty() {
+            request_ens_batch(
+                &mut ht,
+                &mut total_processed,
+                &mut unregistered_domains,
+                &mut expired_domains,
+            )
+            .await;
+        }
+
+        println!("Not registered domains: {:#?}", unregistered_domains);
+        println!("Expired domains: {:#?}", expired_domains);
+    }
 }
