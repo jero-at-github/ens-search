@@ -3,15 +3,21 @@
 // https://eips.ethereum.org/EIPS/eip-137
 
 use ens_domains::{read_lines, sha3_hex};
+use std::collections::HashMap;
 use std::error::Error;
+use std::{thread, time};
 
 use crate::structs::{Query, QueryVariables, Response};
 
 mod structs;
 mod tests;
 
-async fn request_data(labelhash_ids: Vec<String>) -> Result<(), Box<dyn Error>> {
-    // let mut map = HashMap::new();
+async fn request_data(ht: HashMap<String, String>) -> Result<Vec<String>, Box<dyn Error>> {
+    let ht_ids = ht
+        .iter()
+        .map(|ht| String::from(ht.0))
+        .collect::<Vec<String>>();
+
     let q = r#"
     query getName($ids: [ID!]) {
         registrations(where: { id_in: $ids }) {
@@ -26,18 +32,14 @@ async fn request_data(labelhash_ids: Vec<String>) -> Result<(), Box<dyn Error>> 
     }"#
     .into();
 
-    // let ids: Vec<String> = vec![
-    //     "0xaaeb548a149a78dfc2f2d4e6838f5cba9f65c55bcefa06258e77335cf32b4452".into(),
-    //     "0x41b1a0649752af1b28b3dc29a1556eee781e4a4c3a1f7f53f90fa834de098c4d".into(),
-    // ];
-    let v = QueryVariables { ids: labelhash_ids };
+    let v = QueryVariables {
+        ids: ht_ids.clone(),
+    };
 
     let q = Query {
         query: q,
         variables: v,
     };
-
-    // let json = serde_json::to_string(&q).unwrap();
 
     let client = reqwest::Client::new();
     let res = client
@@ -47,39 +49,83 @@ async fn request_data(labelhash_ids: Vec<String>) -> Result<(), Box<dyn Error>> 
         .send()
         .await?;
 
-    let js = res.json::<Response>().await?;
-    //println!("{:#?}", js);
-    // println!("{:#?}", js.data.registrations.get(0).unwrap().id);
+    let response = res.json::<Response>().await?;
 
-    let expiration_dates: Vec<String> = js
+    // Check for not registered domains
+    let response_ids: Vec<String> = response
         .data
         .registrations
         .iter()
-        .map(|r| r.expiryDate.clone())
+        .map(|r| r.id.clone())
         .collect();
 
-    println!("{:#?}", expiration_dates);
+    let mut not_registered_domains: Vec<String> = vec![];
+    let mut ht_ids_iter = ht_ids.iter();
+    let mut ht_id = ht_ids_iter.next();
+    while ht_id.is_some() {
+        let ht_id_value = ht_id.unwrap();
+        if !response_ids.contains(ht_id_value) {
+            let domain_name = ht.get(ht_id_value).unwrap();
+            not_registered_domains.push(domain_name.clone());
+        }
+        ht_id = ht_ids_iter.next();
+    }
 
-    // let person: Person = serde_json::from_str(&js.data)?;
-    // println!("{:#?}", person);
+    // let expiration_dates: Vec<String> = js
+    //     .data
+    //     .registrations
+    //     .iter()
+    //     .map(|r| r.expiryDate.clone())
+    //     .collect();
 
-    Ok(())
+    // let mut ex_dates_iter = expiration_dates.iter();
+    // let mut timestamp = ex_dates_iter.next();
+    // while timestamp.is_some() {
+    //     let dt = Utc.timestamp(timestamp.unwrap().parse::<i64>().unwrap(), 0);
+    //     println!("{:#?}", dt);
+    //     timestamp = ex_dates_iter.next();
+    // }
+
+    Ok(not_registered_domains)
 }
 
 async fn process_file() {
     if let Ok(lines) = read_lines("./sample/3letters.txt") {
-        let mut labelhash_ids: Vec<String> = Vec::new();
+        let mut labelhash_ids: HashMap<String, String> = HashMap::new();
+        let mut not_registered_domains: Vec<String> = vec![];
+        // let progress_ptg = lines.size_hint().1.unwrap() / 10;
 
+        let mut total_processed = 0;
         for (idx, line) in lines.enumerate() {
             if let Ok(domain_name) = line {
-                labelhash_ids.push(sha3_hex(domain_name.to_lowercase()));
-                if idx != 0 && idx % 100 == 0 {
-                    request_data(labelhash_ids.clone()).await.unwrap();
+                let domain_name_norm = domain_name.to_lowercase();
+                let domain_hash = sha3_hex(domain_name_norm.clone());
+                labelhash_ids.insert(domain_hash, domain_name_norm.clone());
+
+                if idx != 0 && (idx + 1) % 100 == 0 {
+                    // request ENS API
+                    let mut r = request_data(labelhash_ids.clone()).await.unwrap();
+                    not_registered_domains.append(&mut r);
+
                     labelhash_ids.clear();
-                    break;
+                    thread::sleep(time::Duration::from_secs(1));
+                    total_processed += 1;
+                    println!("Processed {} domains", total_processed);
                 }
             }
         }
+
+        if !labelhash_ids.is_empty() {
+            let mut r = request_data(labelhash_ids.clone()).await.unwrap();
+            not_registered_domains.append(&mut r);
+            labelhash_ids.clear();
+            println!(
+                "Processed {} domains",
+                total_processed + labelhash_ids.len()
+            );
+        }
+
+        println!("Not registered domains: {:#?}", not_registered_domains);
     }
 }
 

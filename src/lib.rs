@@ -23,7 +23,7 @@ fn sha3(name: &[u8]) -> Vec<u8> {
 }
 
 pub fn sha3_hex(name: String) -> String {
-    format!("{}", vec_to_hex(sha3(name.as_bytes())))
+    vec_to_hex(sha3(name.as_bytes()))
 }
 
 fn namehash(name: String) -> Vec<u8> {
@@ -43,7 +43,7 @@ fn namehash(name: String) -> Vec<u8> {
 }
 
 pub fn namehash_hex(name: String) -> String {
-    format!("{}", vec_to_hex(namehash(name)))
+    vec_to_hex(namehash(name))
 }
 
 pub fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>

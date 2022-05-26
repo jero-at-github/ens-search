@@ -16,6 +16,7 @@ pub struct ResponseDomain {
     pub name: String,
 }
 
+#[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ResponseRegistrations {
     pub id: String,
