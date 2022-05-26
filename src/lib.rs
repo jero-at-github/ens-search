@@ -1,3 +1,4 @@
+use chrono::{TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Keccak256};
 use std::collections::HashMap;
@@ -141,4 +142,60 @@ pub async fn request_ens_data(ht: HashMap<String, String>) -> Result<EnsResponse
             return Err(e.into());
         }
     };
+}
+
+pub fn process_ens_data(
+    response: EnsResponse,
+    ht: HashMap<String, String>,
+) -> Result<(Vec<String>, Vec<String>), Box<dyn Error>> {
+    // Collect response domain ids and expiration dates
+    let response_ids: Vec<String> = response
+        .data
+        .registrations
+        .iter()
+        .map(|r| r.id.clone())
+        .collect();
+
+    let response_exp_dates: Vec<(String, String)> = response
+        .data
+        .registrations
+        .iter()
+        .map(|r| (r.id.clone(), r.expiryDate.clone()))
+        .collect();
+
+    let mut not_registered_domains: Vec<String> = vec![];
+    let mut expired_domains: Vec<String> = vec![];
+
+    let mut ht_iter = ht.iter();
+    let mut ht_value = ht_iter.next();
+
+    // Check unregistered domains
+    while ht_value.is_some() {
+        let hash = ht_value.unwrap().0;
+        let domain_name = ht_value.unwrap().1;
+
+        // Check if the rquest response contains the hash
+        if !response_ids.contains(hash) {
+            not_registered_domains.push(domain_name.clone());
+        }
+
+        ht_value = ht_iter.next();
+    }
+
+    // Check expired domains
+    let mut exp_dates_iter = response_exp_dates.iter();
+    let mut exp_dates_value = exp_dates_iter.next();
+    while exp_dates_value.is_some() {
+        let hash = &exp_dates_value.unwrap().0;
+        let timestamp = &exp_dates_value.unwrap().1;
+        let dt = Utc.timestamp(timestamp.parse::<i64>().unwrap(), 0);
+
+        if dt.lt(&Utc::now()) {
+            let domain_name = ht.get(hash).unwrap();
+            expired_domains.push(domain_name.clone());
+        }
+        exp_dates_value = exp_dates_iter.next();
+    }
+
+    Ok((not_registered_domains, expired_domains))
 }
