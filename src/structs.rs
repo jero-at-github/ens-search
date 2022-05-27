@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -33,4 +34,16 @@ pub struct EnsData {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EnsResponse {
     pub data: EnsData,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ExpiredDomain {
+    pub domain_name: String,
+    pub expiration_date: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProcessResult {
+    pub unregistered_domains: Vec<String>,
+    pub expired_domains: Vec<ExpiredDomain>,
 }
