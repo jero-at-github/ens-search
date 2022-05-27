@@ -50,7 +50,9 @@ pub async fn process_file(file_name: String) {
         for (idx, line) in lines.enumerate() {
             if let Ok(domain_name) = line {
                 // Populate hashmap with hash-domain name pairs
-                let domain_name_norm = domain_name.to_lowercase().trim().to_string();
+                let mut domain_name_norm = domain_name.to_lowercase();
+                domain_name_norm.retain(|c| !c.is_whitespace());
+
                 let domain_hash = sha3_hex(domain_name_norm.clone());
                 ht.insert(domain_hash, domain_name_norm.clone());
 

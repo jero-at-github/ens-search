@@ -6,5 +6,5 @@ use ens_domains::process_file;
 
 #[tokio::main]
 async fn main() {
-    process_file("./sample/3letters.txt".into()).await;
+    process_file("./sample/countries.txt".into()).await;
 }
