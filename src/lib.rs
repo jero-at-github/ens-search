@@ -6,6 +6,7 @@ use std::path::Path;
 use std::str;
 
 use crossterm::{cursor, ExecutableCommand};
+use question::{Answer, Question};
 use structs::ProcessResult;
 
 use crate::ens_util::request_ens_batch;
@@ -26,6 +27,19 @@ where
 {
     let file = File::open(filename)?;
     Ok(io::BufReader::new(file).lines())
+}
+
+pub fn process_is_confirm() -> bool {
+    println!(
+        "Files result.txt and errors.txt will be createad overwriting any previous existing data..."
+    );
+
+    let answer = Question::new("Ok?")
+        .default(Answer::YES)
+        .show_defaults()
+        .confirm();
+
+    answer == Answer::YES
 }
 
 pub async fn process_file(file_name: String) {
@@ -88,4 +102,6 @@ pub async fn process_file(file_name: String) {
 
     // Write results into file
     write!(file_result, "{:#?}", process_result).unwrap();
+
+    println!("Files results.txt and errors.txt generated");
 }
