@@ -25,7 +25,7 @@ Option 2. Compiling the code:
     ...
     ```
     Note: the `.eth` extension is optional, it will work the same with or without it.
-- Execute the tool: `ens-search file {./myInput.txt`}
+- Execute the tool: `ens-search file ./myInput.txt`
 - Two files will be generated in the current folder:
 . `result.txt` containing a JSON structure with information regarding non registered domains and expired domains: 
     ```
