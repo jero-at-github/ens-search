@@ -1,3 +1,6 @@
+# ens-search
+ENS domains bulk search tool
+
 ### What
 
 ens-search is a CLI tool implemented in Rust for searching Web3 ENS domains: https://docs.ens.domains/
