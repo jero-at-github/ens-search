@@ -8,7 +8,7 @@ It supports unlimited bulk search through a text file used as input.
 
 ### How to install
 
-Option 1. Using the binary release for Windows: [windows 0.1.0s](https://github.com/jero-at-github/ens-search/blob/main/releases/windows/0.1.0/ens-search.exe)
+Option 1. Using the binary release for Windows: [windows 0.1.0](https://github.com/jero-at-github/ens-search/raw/main/releases/windows/0.1.0/ens-search.exe)
 
 Option 2. Compiling the code: 
 - Install Rust: https://www.rust-lang.org/tools/install
