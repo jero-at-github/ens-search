@@ -70,18 +70,20 @@ pub async fn process_file(file_name: String) {
                     domain_name_norm = domain_name_norm.replace(".eth", "");
                 }
 
-                let domain_hash = sha3_hex(domain_name_norm.clone());
-                ht.insert(domain_hash, domain_name_norm.clone());
+                if !domain_name_norm.is_empty() {
+                    let domain_hash = sha3_hex(domain_name_norm.clone());
+                    ht.insert(domain_hash, domain_name_norm.clone());
 
-                if idx != 0 && (idx + 1) % MAX_ENS_QUERY == 0 {
-                    // Request API in batch
-                    request_ens_batch(
-                        &mut ht,
-                        &mut total_processed,
-                        &mut process_result,
-                        &mut file_errors,
-                    )
-                    .await;
+                    if idx != 0 && (idx + 1) % MAX_ENS_QUERY == 0 {
+                        // Request API in batch
+                        request_ens_batch(
+                            &mut ht,
+                            &mut total_processed,
+                            &mut process_result,
+                            &mut file_errors,
+                        )
+                        .await;
+                    }
                 }
             }
         }
