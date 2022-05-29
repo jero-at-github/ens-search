@@ -12,6 +12,7 @@ Option 1. Using the binary release for Windows: [windows 0.1.0](https://github.c
 For Linux and Mac platforms use option 2.
 
 Option 2. Compiling the code: 
+- Download the [code](https://github.com/jero-at-github/ens-search/archive/refs/heads/main.zip) or just clone it: `git clone https://github.com/jero-at-github/ens-search.git`
 - Install Rust: https://www.rust-lang.org/tools/install
 - Compile the code: `cargo install`
 - Check installation: `ens-search --help`
