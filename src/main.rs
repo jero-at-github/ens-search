@@ -14,7 +14,7 @@ struct Args {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Send a file
+    /// Send a file. E.g. "ens-search file ./myFile.txt"
     File { path: String },
 }
 
