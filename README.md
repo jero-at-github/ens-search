@@ -14,7 +14,7 @@ For Linux and Mac platforms use option 2.
 Option 2. Compiling the code: 
 - Download the [code](https://github.com/jero-at-github/ens-search/archive/refs/heads/main.zip) or just clone it: `git clone https://github.com/jero-at-github/ens-search.git`
 - Install Rust: https://www.rust-lang.org/tools/install
-- Compile the code: `cargo install`
+- Compile and install the code: `cargo install --path ./` (in the root project's folder)
 - Check installation: `ens-search --help`
  
 ### How to use 
