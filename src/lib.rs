@@ -66,9 +66,8 @@ pub async fn process_file(file_name: String) {
                 // Populate hashmap with hash-domain name pairs
                 let mut domain_name_norm = domain_name.to_lowercase();
                 domain_name_norm.retain(|c| !c.is_whitespace());
-                if domain_name_norm.contains(".eth") {
-                    domain_name_norm = domain_name_norm.replace(".eth", "");
-                }
+                domain_name_norm = domain_name_norm.replace(".eth", "");
+                domain_name_norm = domain_name_norm.replace(".", "");
 
                 if !domain_name_norm.is_empty() {
                     let domain_hash = sha3_hex(domain_name_norm.clone());
